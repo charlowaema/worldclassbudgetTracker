@@ -1,5 +1,8 @@
 FROM php:8.3-fpm
 
+# ---------------------------------------------------------
+# Install system dependencies
+# ---------------------------------------------------------
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -17,26 +20,8 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-configure gd \
-        --with-freetype \
-        --with-jpeg \
-        --with-webp \
-    && docker-php-ext-install -j$(nproc) \
-        pdo \
-        pdo_pgsql \
-        mbstring \
-        exif \
-        pcntl \
-        bcmath \
-        gd \
-        zip\
-    unzip \
-    nginx \
-    supervisor \
-    && rm -rf /var/lib/apt/lists/*
-
 # ---------------------------------------------------------
-# PHP extensions
+# Install PHP extensions
 # ---------------------------------------------------------
 RUN docker-php-ext-configure gd \
         --with-freetype \
@@ -57,8 +42,6 @@ RUN docker-php-ext-configure gd \
 # ---------------------------------------------------------
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    && npm --version \
-    && node --version \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------
@@ -66,11 +49,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 # ---------------------------------------------------------
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# ---------------------------------------------------------
-# Application directory
-# ---------------------------------------------------------
 WORKDIR /var/www
 
+# ---------------------------------------------------------
+# Copy application
+# ---------------------------------------------------------
 COPY . .
 
 # ---------------------------------------------------------
@@ -81,46 +64,35 @@ RUN composer install \
     --no-interaction \
     --prefer-dist \
     --optimize-autoloader \
-    --no-progress
+    --no-progress \
+    --no-scripts
 
 # ---------------------------------------------------------
-# Install Node dependencies and build Vite assets
+# Install frontend dependencies and build assets
 # ---------------------------------------------------------
 RUN npm ci \
     && npm run build \
     && rm -rf node_modules
 
 # ---------------------------------------------------------
-# Laravel storage/cache permissions
+# Set Laravel permissions
 # ---------------------------------------------------------
-RUN mkdir -p \
-        storage/framework/cache \
-        storage/framework/sessions \
-        storage/framework/views \
-        storage/logs \
-        bootstrap/cache \
-    && chown -R www-data:www-data /var/www \
-    && chmod -R 775 storage \
-    && chmod -R 775 bootstrap/cache
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www/storage \
+    && chmod -R 755 /var/www/bootstrap/cache \
+    && chmod -R 755 /var/www/public/build
 
 # ---------------------------------------------------------
-# Nginx configuration
+# Copy server configuration
 # ---------------------------------------------------------
 COPY docker/nginx.conf /etc/nginx/sites-available/default
 
-# ---------------------------------------------------------
-# Supervisor configuration
-# ---------------------------------------------------------
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# ---------------------------------------------------------
-# Entrypoint
-# ---------------------------------------------------------
 COPY docker/entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh
 
-# Render expects the web service on port 80
 EXPOSE 80
 
 ENTRYPOINT ["/entrypoint.sh"]
