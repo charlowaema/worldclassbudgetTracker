@@ -4,45 +4,60 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
+
     envVars:
       - key: APP_NAME
-        value: "worldclass-budgettracker"
+        value: worldclass-budgettracker
+
       - key: APP_ENV
         value: production
+
       - key: APP_DEBUG
-        value: false
+        value: "false"
+
       - key: APP_KEY
         generateValue: true
+
       - key: APP_URL
-        value:https://worldclass-budgettracker-system2026.onrender.com
+        value: https://worldclass-budgettracker-system2026.onrender.com
+
       - key: DB_CONNECTION
         value: pgsql
+
       - key: DB_HOST
         fromDatabase:
           name: budgettracker-db
           property: host
+
       - key: DB_PORT
         fromDatabase:
           name: budgettracker-db
           property: port
+
       - key: DB_DATABASE
         fromDatabase:
           name: budgettracker-db
           property: database
+
       - key: DB_USERNAME
         fromDatabase:
           name: budgettracker-db
           property: user
+
       - key: DB_PASSWORD
         fromDatabase:
           name: budgettracker-db
           property: password
+
       - key: CACHE_STORE
         value: database
+
       - key: SESSION_DRIVER
         value: database
+
       - key: QUEUE_CONNECTION
         value: database
+
       - key: LOG_CHANNEL
         value: stderr
 
