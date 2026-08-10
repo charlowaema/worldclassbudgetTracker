@@ -4,12 +4,12 @@
     "description": "A world-class personal budget tracker built with Laravel.",
     "keywords": ["laravel", "budget", "finance", "excel"],
     "license": "MIT",
-    "require": {
-        "php": "^8.2",
-        "laravel/framework": "^11.0",
-        "laravel/tinker": "^2.9",
-        "maatwebsite/excel": "^3.1"
-    },
+   "require": {
+    "php": "^8.3",
+    "laravel/framework": "^13.0",
+    "laravel/tinker": "^3.0",
+    "maatwebsite/excel": "^3.1"
+},
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "laravel/pint": "^1.13",
