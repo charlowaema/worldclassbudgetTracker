@@ -1,36 +1,29 @@
-#!/bin/bash
+#!/bin/sh
+
 set -e
- 
-echo "Starting Application..."
- 
-# Generate app key if not set
-if [ -z "$APP_KEY" ]; then
-    php artisan key:generate --force
-fi
- 
-# Clear file-based caches (safe before DB exists)
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
- 
-# Run migrations
-php artisan migrate --force --no-interaction
- 
-# Clear database cache (safe after migrations)
-php artisan cache:clear || true
- 
-# Seed essential data
-#php artisan db:seed --class=RolesAndPermissionsSeeder --force --no-interaction
-#php artisan db:seed --class=AdminUserSeeder --force --no-interaction
- 
-# Cache for performance
+
+echo "Starting Laravel application..."
+
+cd /var/www
+
+echo "Clearing Laravel caches..."
+php artisan optimize:clear
+
+echo "Running database migrations..."
+php artisan migrate --force
+
+echo "Creating storage link..."
+php artisan storage:link || true
+
+echo "Caching Laravel configuration..."
 php artisan config:cache
+
+echo "Caching Laravel routes..."
 php artisan route:cache
+
+echo "Caching Laravel views..."
 php artisan view:cache
- 
-# Storage and permissions
-php artisan storage:link 2>/dev/null || true
-chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
- 
-echo "Setup complete. Starting services..."
+
+echo "Starting services..."
+
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
