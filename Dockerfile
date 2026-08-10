@@ -46,15 +46,15 @@ WORKDIR /var/www
 # Copy Composer files first
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies
 RUN composer install \
     --no-dev \
-    --optimize-autoloader \
     --no-interaction \
-    --prefer-dist
+    --prefer-dist \
+    --no-scripts
 
-# Copy application
 COPY . .
+
+RUN composer dump-autoload --optimize
 
 # --------------------------------------------------
 # Install Node dependencies and build frontend
