@@ -1,38 +1,93 @@
 FROM php:8.3-fpm
- 
-# Install system dependencies
+
+# --------------------------------------------------
+# System dependencies
+# --------------------------------------------------
 RUN apt-get update && apt-get install -y \
-    git curl libpng-dev libonig-dev libxml2-dev \
-    libpq-dev zip unzip nginx supervisor \
-    && docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
- 
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libpq-dev \
+    zip \
+    unzip \
+    nginx \
+    supervisor \
+    && docker-php-ext-install \
+        pdo \
+        pdo_pgsql \
+        mbstring \
+        exif \
+        pcntl \
+        bcmath \
+        gd \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# --------------------------------------------------
 # Install Node.js 20
+# --------------------------------------------------
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
- 
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# --------------------------------------------------
 # Install Composer
+# --------------------------------------------------
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
- 
+
+# --------------------------------------------------
+# Application directory
+# --------------------------------------------------
 WORKDIR /var/www
+
+# Copy Composer files first
+COPY composer.json composer.lock ./
+
+# Install PHP dependencies
+RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    --prefer-dist
+
+# Copy application
 COPY . .
- 
-# Install PHP and Node dependencies, build frontend
-RUN composer install --no-dev --optimize-autoloader --no-interaction
-RUN npm ci && npm run build && rm -rf node_modules
- 
-# Set permissions
+
+# --------------------------------------------------
+# Install Node dependencies and build frontend
+# --------------------------------------------------
+RUN npm ci \
+    && npm run build \
+    && rm -rf node_modules
+
+# --------------------------------------------------
+# Laravel permissions
+# --------------------------------------------------
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage \
     && chmod -R 755 /var/www/bootstrap/cache \
     && chmod -R 755 /var/www/public/build
- 
-# Copy configs and entrypoint
+
+# --------------------------------------------------
+# Nginx
+# --------------------------------------------------
 COPY docker/nginx.conf /etc/nginx/sites-available/default
+
+# --------------------------------------------------
+# Supervisor
+# --------------------------------------------------
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# --------------------------------------------------
+# Entrypoint
+# --------------------------------------------------
 COPY docker/entrypoint.sh /entrypoint.sh
+
 RUN chmod +x /entrypoint.sh
- 
+
 EXPOSE 80
+
 ENTRYPOINT ["/entrypoint.sh"]
